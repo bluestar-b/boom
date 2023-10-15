@@ -1,12 +1,12 @@
 package main
 
 import (
+    "flag"
     "fmt"
     "sync"
     "github.com/valyala/fasthttp"
 
 )
-
 
 
 func CreateRequest(url string, method string) ([]byte, int) {
@@ -32,24 +32,27 @@ func Flood(reqcount int, url string, mode string) {
         _, getStatusCode := CreateRequest(url, mode)
         fmt.Printf("status: %d, %s\n", getStatusCode, url)
     }
-    
+
 }
 
-
-
-
 func main() {
-    count := 800
-    reqcount := 3
-    url := "http://127.0.0.1:8000"
-    mode := "GET"
+    countPtr := flag.Int("count", 8, "Number of goroutines")
+    reqCountPtr := flag.Int("reqcount", 3, "Number of requests per goroutine")
+    urlPtr := flag.String("url", "", "URL to request")
+    modePtr := flag.String("mode", "", "HTTP request method")
+    flag.Parse()
+
+    if *urlPtr == "" || *modePtr == "" {
+        fmt.Println("Please provide both a URL and an HTTP request method.")
+        return
+    }
 
     var wg sync.WaitGroup
 
-    for i := 0; i < count; i++ {
+    for i := 0; i < *countPtr; i++ {
         go func() {
             defer wg.Done()
-            Flood(reqcount, url, mode)
+            Flood(*reqCountPtr, *urlPtr, *modePtr)
         }()
         wg.Add(1)
     }
@@ -57,3 +60,4 @@ func main() {
     wg.Wait()
     fmt.Println("\nDone")
 }
+
