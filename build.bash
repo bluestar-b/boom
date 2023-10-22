@@ -13,10 +13,11 @@ declare -A platforms
 
 
 platforms=(
-    ["linux"]="amd64 arm64"
-    ["windows"]="amd64 arm64"
+    ["darwin"]="amd64 arm arm64"
+    ["freebsd"]="amd64 arm arm64"
+    ["linux"]="amd64 arm arm64"
+    ["windows"]="amd64 arm arm64"
 )
-
 
 
 
