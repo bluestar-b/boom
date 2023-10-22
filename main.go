@@ -46,7 +46,7 @@ func Flood(reqcount int, url string, mode string) (int, int) {
 func main() {
     countPtr := flag.Int("c", 8, "Number of goroutines")
     reqCountPtr := flag.Int("rc", 1, "Number of requests per goroutine")
-    urlPtr := flag.String("h", "", "URL to request")
+    urlPtr := flag.String("u", "", "URL to request")
     modePtr := flag.String("m", "", "HTTP request method")
     flag.Parse()
 
