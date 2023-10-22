@@ -1,1 +1,9 @@
-This Golang program is for a basic HTTP flood test, creating between 1,400 to 2,400 network requests per second (tested on a 72Mbps network).
+This branch is for binary builds.
+
+
+In builds, there are binaries for:
+
+- linux-amd64
+- linux-arm64
+- windows-amd64
+- windows-arm64
